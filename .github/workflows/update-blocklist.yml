@@ -2,7 +2,7 @@ name: Update Pi-hole Blocklist Daily
 
 on:
   schedule:
-    - cron: '0 2 * * *'  # jeden Tag 2 Uhr UTC
+    - cron: '0 2 * * *'  # täglich 2 Uhr UTC
   workflow_dispatch:
 
 jobs:
@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download and filter to Pi-hole domain-only format
         shell: pwsh
