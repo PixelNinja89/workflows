@@ -13,23 +13,30 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Download and convert AdGuard filter to Pi-hole domains
+      - name: Download and filter to Pi-hole domain-only format
         shell: pwsh
         run: |
           $url = "https://raw.githubusercontent.com/AdguardTeam/HostlistsRegistry/refs/heads/main/filters/other/filter_39_DandelionSprouts_AntiPushNotifications/filter.txt"
           $outputFile = "pihole_blocklist.txt"
           $content = Invoke-WebRequest -Uri $url -UseBasicParsing | Select-Object -ExpandProperty Content
-          $domainPattern = '^\|\|?([a-z0-9.-]+\.[a-z]{2,})(\^)?$'
-          $domains = @{}
+
+          $domainPattern = '^\|\|([a-z0-9.-]+\.[a-z]{2,})\^$'
+
+          $filteredLines = @()
           foreach ($line in $content -split "`n") {
             $trimmed = $line.Trim()
+
+            if ($trimmed -eq "" -or $trimmed.StartsWith("!") -or $trimmed.StartsWith("[") -or $trimmed.StartsWith("@@")) {
+              continue
+            }
+
             if ($trimmed -match $domainPattern) {
-              $domain = $matches[1].ToLower()
-              $domains[$domain] = $true
+              $filteredLines += $trimmed.ToLower()
             }
           }
-          $domains.Keys | Sort-Object | Out-File -FilePath $outputFile -Encoding ASCII
-          Write-Output "Extracted $($domains.Count) domains and saved to $outputFile"
+
+          $filteredLines | Sort-Object | Out-File -FilePath $outputFile -Encoding ASCII
+          Write-Output "Gefilterte Liste mit $($filteredLines.Count) Domains gespeichert."
 
       - name: Commit and push changes
         run: |
